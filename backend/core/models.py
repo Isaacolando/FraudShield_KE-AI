@@ -9,7 +9,18 @@ try:
 except ImportError:
     # For Django 3.1+ use the JSONField on models
     JSONField = models.JSONField
+from django.db import models
+from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
+from django.contrib.contenttypes.models import ContentType
 
+
+
+class County(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+    code = models.CharField(max_length=10, blank=True)
+    population = models.IntegerField(null=True, blank=True)
+    def __str__(self):
+        return self.name
 class Entity(models.Model):
     ENTITY_TYPES = [('county','county'),('vendor','vendor'),('mp','mp'),('bank','bank'),('telco','telco')]
     name = models.CharField(max_length=255)
@@ -17,6 +28,7 @@ class Entity(models.Model):
     national_id = models.CharField(max_length=50, blank=True, null=True)
     phone = models.CharField(max_length=30, blank=True, null=True)
     metadata = models.JSONField(default=dict, blank=True)
+    county = models.ForeignKey(County, null=True, blank=True, on_delete=models.SET_NULL)
 
     def __str__(self):
         return f"{self.name} ({self.entity_type})"
@@ -59,13 +71,7 @@ class Disbursement(models.Model):
     to_entity = models.ForeignKey(Entity, related_name='disbursements', on_delete=models.CASCADE)
     date = models.DateField()
     metadata = models.JSONField(default=dict, blank=True)
-    transaction = models.ForeignKey(
-        Transaction, 
-        on_delete=models.SET_NULL, 
-        null=True, 
-        blank=True,
-        related_name='disbursements'
-    )
+    #transaction = models.ForeignKey(Transaction, on_delete=models.SET_NULL, null=True, blank=True, related_name='disbursements' )
 
     def __str__(self):
         return self.disbursement_id
@@ -104,3 +110,21 @@ class Flag(models.Model):
     related_object = GenericForeignKey('content_type', 'object_id')
 
     evidence = models.ManyToManyField(EvidenceDocument, blank=True)
+
+
+    
+
+class Rumor(models.Model):
+    rumor_id = models.CharField(max_length=100, unique=True)
+    text = models.TextField()
+    source = models.CharField(max_length=50)  # 'x', 'news'
+    url = models.URLField()
+    sentiment = models.CharField(max_length=10)  # 'negative', 'positive'
+    score = models.FloatField()
+    timestamp = models.DateTimeField()
+    related_county = models.ForeignKey(County, null=True, blank=True, on_delete=models.CASCADE)
+    related_entity = models.ForeignKey(Entity, null=True, blank=True, on_delete=models.CASCADE)
+    flags = GenericRelation('Flag')
+
+    def __str__(self):
+        return f"{self.source}: {self.text[:50]}"

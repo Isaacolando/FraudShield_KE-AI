@@ -29,4 +29,7 @@ urlpatterns = [
     path('disbursement/<str:disbursement_id>/', views.disbursement_detail, name='disbursement-detail'),
     path('transaction/<str:tx_id>/', views.transaction_detail, name='transaction-detail'),
     path('entity/<int:entity_id>/', views.entity_detail, name='entity-detail'),
+    path('counties/<str:county_name>/', views.county_dashboard, name='county-dashboard'),
+    path('rumor/<str:rumor_id>/', views.rumor_detail, name='rumor-detail'),
+    path('counties/', views.county_list, name='county-list'),
 ]

@@ -25,8 +25,18 @@ SECRET_KEY = 'django-insecure-9#^!k3e30x%q30voyky(m(avzhp3+41m35s@ekw^c%j6h84ch%
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    'localhost',
+    '127.0.0.1',
+    'relieved-mosquito-nationally.ngrok-free.app'
+]
 
+CSRF_TRUSTED_ORIGINS = [
+    'http://localhost',
+    'http://127.0.0.1',
+    'https://relieved-mosquito-nationally.ngrok-free.app',
+    'http://relieved-mosquito-nationally.ngrok-free.app',
+]
 
 # Application definition
 
@@ -40,6 +50,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'corsheaders',
     'core',
+    'django.contrib.humanize',
 ]
 
 MIDDLEWARE = [
@@ -118,7 +129,8 @@ TIME_ZONE = 'UTC'
 USE_I18N = True
 
 USE_TZ = True
-
+CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
@@ -127,5 +139,16 @@ STATIC_URL = 'static/'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
-
+CELERY_BROKER_URL = 'redis://localhost:6379/0'
+CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
+CELERY_BEAT_SCHEDULE = {
+    'ml-fraud-every-minute': {
+        'task': 'fraudshield.tasks.run_fraud_detection_task',
+        'schedule': 60.0,
+    },
+    'scrape-rumors-hourly': {
+        'task': 'fraudshield.tasks.scrape_rumors_task',
+        'schedule': 3600.0,
+    },
+}
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

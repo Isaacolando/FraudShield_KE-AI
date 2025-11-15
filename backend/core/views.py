@@ -12,11 +12,23 @@ from .models import Transaction, EvidenceDocument
 from django.shortcuts import render, redirect
 from django.contrib.auth import login, authenticate
 from django.contrib import messages
+from django.contrib.contenttypes.models import ContentType
+from .models import Bill, Allocation, Disbursement, Transaction, Entity, EvidenceDocument
+from django.contrib.auth.models import User
+from .models import County, Transaction, Flag, Rumor, Allocation
+from django.db.models import Sum, Count
+from django.utils import timezone
 
 def login_view(request):
     if request.method == "POST":
-        username = request.POST['username']
-        password = request.POST['password']
+        identifier = request.POST.get('username', '').strip()
+        password = request.POST.get('password', '')
+        # allow either username or email
+        username = identifier
+        if '@' in identifier:
+            user_obj = User.objects.filter(email__iexact=identifier).first()
+            if user_obj:
+                username = user_obj.get_username()
         user = authenticate(request, username=username, password=password)
         if user and user.is_staff:
             login(request, user)
@@ -211,9 +223,7 @@ class IngestEvidence(APIView):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-# details views fuctions 
-from django.shortcuts import render, get_object_or_404
-from .models import Bill, Allocation, Disbursement, Transaction, Entity, EvidenceDocument
+
 
 def bill_detail(request, bill_id):
     bill = get_object_or_404(Bill, bill_id=bill_id)
@@ -247,3 +257,48 @@ def entity_detail(request, entity_id):
         'incoming': incoming,
         'outgoing': outgoing
     })
+def county_list(request):
+    counties = County.objects.all().order_by('name')
+    return render(request, 'county/list.html', {'counties': counties})
+def county_dashboard(request, county_name):
+    county = get_object_or_404(County, name__icontains=county_name)
+    cutoff = timezone.now() - timezone.timedelta(days=30)
+
+   
+    allocs = Allocation.objects.filter(to_entity__county=county)
+
+    
+    disburs = Transaction.objects.filter(
+        source_entity__county=county,
+        timestamp__gte=cutoff
+    )
+
+   
+    flags = Flag.objects.filter(
+        content_type=ContentType.objects.get_for_model(Transaction),
+        object_id__in=disburs.values_list('id', flat=True)
+    )
+
+    
+    rumors = Rumor.objects.filter(related_county=county).order_by('-timestamp')[:10]
+
+    
+    stats = {
+        'total_allocated': allocs.aggregate(s=Sum('amount'))['s'] or 0,
+        'total_spent': disburs.aggregate(s=Sum('amount'))['s'] or 0,
+        'active_flags': flags.count(),
+        'rumor_count': rumors.count(),
+    }
+
+    return render(request, 'county/dashboard.html', {
+        'county': county,
+        'stats': stats,
+        'rumors': rumors,
+        'flags': flags,
+        'allocs': allocs[:5],
+        'disburs': disburs[:5],
+    })
+
+def rumor_detail(request, rumor_id):
+    rumor = get_object_or_404(Rumor, rumor_id=rumor_id)
+    return render(request, 'rumor/detail.html', {'rumor': rumor})

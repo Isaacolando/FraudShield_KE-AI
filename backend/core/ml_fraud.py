@@ -1,26 +1,28 @@
 # fraudshield/ml_fraud.py
 import pandas as pd
 from sklearn.ensemble import IsolationForest
+from sklearn.preprocessing import StandardScaler
 from django.utils import timezone
-from .models import Transaction, Flag, Entity
+from .models import Transaction, Flag, Entity, County, Rumor
 from django.contrib.contenttypes.models import ContentType
 import uuid
+import requests
+import json
+import re
+
+# === CONFIG ===
+X_API_BEARER = "YOUR_X_BEARER_TOKEN"
+X_SEARCH_URL = "https://api.twitter.com/2/tweets/search/recent"
 
 def run_ml_fraud_detection():
-    """Run ML every 60 seconds — creates HIGH severity flags"""
-    print("ML Fraud Detection Running...")
-
-    # Get last 7 days of transactions
+    """Run every 60s — Isolation Forest + Frequency + Timing"""
     cutoff = timezone.now() - timezone.timedelta(days=7)
     txs = Transaction.objects.filter(timestamp__gte=cutoff).select_related(
-        'source_entity', 'dest_entity'
+        'source_entity', 'dest_entity', 'source_entity__county', 'dest_entity__county'
     )
-
-    if txs.count() < 10:
-        print("Not enough data for ML")
+    if txs.count() < 20:
         return
 
-    # Build feature vector
     data = []
     tx_ids = []
     for tx in txs:
@@ -33,32 +35,58 @@ def run_ml_fraud_detection():
             1 if 'mpesa' in tx.tx_type.lower() else 0,
             tx.timestamp.hour,
             tx.timestamp.weekday(),
-            len([t for t in txs if t.dest_entity_id == dst.id])  # frequency
+            txs.filter(dest_entity=dst).count(),
+            1 if src.county and dst.county and src.county != dst.county else 0,
+            1 if tx.timestamp.hour < 6 or tx.timestamp.hour > 22 else 0,
         ])
         tx_ids.append(tx.id)
 
-    df = pd.DataFrame(data, columns=[
-        'amount', 'ghost_vendor', 'from_county', 'is_mpesa',
-        'hour', 'weekday', 'dest_freq'
-    ])
+    cols = ['amount','ghost','from_county','mpesa','hour','weekday','freq','cross_county','night']
+    df = pd.DataFrame(data, columns=cols)
+    scaler = StandardScaler()
+    df_scaled = scaler.fit_transform(df)
+    model = IsolationForest(contamination=0.03, random_state=42)
+    df['anomaly'] = model.fit_predict(df_scaled)
+    df['score'] = model.decision_function(df_scaled)
 
-    # Train Isolation Forest
-    model = IsolationForest(contamination=0.05, random_state=42)
-    df['anomaly'] = model.fit_predict(df)
-    df['score'] = model.decision_function(df)
-
-    # Create flags for anomalies
     for i, row in df.iterrows():
-        if row['anomaly'] == -1:  # Fraud
-            tx = txs[i]
-            reason = f"ML Anomaly: KSh {tx.amount:,.0f} to {tx.dest_entity.name}"
-            create_flag_if_not_exists(tx, 5, reason, row['score'])
+        if row['anomaly'] == -1:
+            tx = Transaction.objects.get(id=tx_ids[i])
+            reason = f"ML Anomaly: KSh {tx.amount:,.0f} → {tx.dest_entity.name} (Score: {row['score']:.3f})"
+            create_flag(tx, 5, reason, row['score'])
 
-def create_flag_if_not_exists(obj, severity, reason, score):
+def scrape_x_rumors():
+    """Scrape X for county fraud rumors"""
+    counties = County.objects.values_list('name', flat=True)
+    for county in counties[:10]:  # limit
+        query = f"({county} corruption OR fraud OR ghost) lang:en -is:retweet"
+        headers = {"Authorization": f"Bearer {X_API_BEARER}"}
+        params = {"query": query, "max_results": 10}
+        try:
+            resp = requests.get(X_SEARCH_URL, headers=headers, params=params, timeout=10)
+            if resp.status_code != 200: continue
+            tweets = resp.json().get('data', [])
+            for t in tweets:
+                text = t['text']
+                sentiment = "negative" if any(w in text.lower() for w in ['fraud','ghost','corrupt']) else "neutral"
+                Rumor.objects.update_or_create(
+                    rumor_id=t['id'],
+                    defaults={
+                        'text': text[:500],
+                        'source': 'twitter',
+                        'url': f"https://x.com/i/web/status/{t['id']}",
+                        'sentiment': sentiment,
+                        'score': -0.9 if sentiment == 'negative' else 0.1,
+                        'timestamp': timezone.now(),
+                        'related_county': County.objects.filter(name__icontains=county).first()
+                    }
+                )
+        except: pass
+
+def create_flag(obj, severity, reason, score):
     ct = ContentType.objects.get_for_model(obj)
-    if Flag.objects.filter(content_type=ct, object_id=obj.id).exists():
+    if Flag.objects.filter(content_type=ct, object_id=obj.id, reason__icontains=reason[:50]).exists():
         return
-
     Flag.objects.create(
         flag_id=str(uuid.uuid4()),
         severity=severity,
@@ -67,4 +95,3 @@ def create_flag_if_not_exists(obj, severity, reason, score):
         content_type=ct,
         object_id=obj.id
     )
-    print(f"ML FLAG: {reason}")

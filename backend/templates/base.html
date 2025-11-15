@@ -27,6 +27,7 @@
   {% block styles %}{% endblock %}
 </head>
 <body class="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-black dark:to-gray-900 text-gray-900 dark:text-white min-h-screen transition-colors duration-300">
+
   <!-- HEADER -->
   <header class="fixed top-0 left-0 right-0 z-50 bg-white/90 dark:bg-black/90 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 shadow-lg">
     <div class="container mx-auto px-6 py-4 flex justify-between items-center">
@@ -36,81 +37,113 @@
           FraudShield Kenya
         </h1>
       </div>
-      <button id="theme-toggle" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 rounded-full font-medium hover:scale-105 transition">
+
+      <!-- MOBILE MENU BUTTON (visible only on small screens) -->
+      <button id="mobile-menu-btn" class="lg:hidden p-2 rounded-lg bg-gray-200 dark:bg-gray-700 hover:scale-105 transition">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+        </svg>
+      </button>
+
+      <!-- THEME TOGGLE -->
+      <button id="theme-toggle" class="hidden lg:block px-4 py-2 bg-gray-200 dark:bg-gray-700 rounded-full font-medium hover:scale-105 transition">
         <span id="theme-text">Dark Mode</span>
       </button>
-      
     </div>
   </header>
 
-  <!-- SIDEBAR -->
-  <aside class="fixed left-0 top-20 bottom-0 w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 shadow-2xl overflow-y-auto">
+  <!-- SIDEBAR (Hidden on mobile by default) -->
+  <aside id="sidebar" class="fixed left-0 top-20 bottom-0 w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 shadow-2xl overflow-y-auto z-40 transform transition-transform duration-300 ease-in-out lg:translate-x-0 -translate-x-full">
     <nav class="p-6 space-y-3">
-      <a href="/" class="nav-link flex items-center gap-4 px-5 py-4 rounded-xl text-lg font-semibold transition-all {% if request.path == '/' %}bg-kenya-red text-white shadow-lg{% else %}hover:bg-gray-100 dark:hover:bg-gray-800{% endif %}">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
-        Dashboard
-      </a>
-      <a href="/alerts/" class="nav-link flex items-center gap-4 px-5 py-4 rounded-xl text-lg font-semibold transition-all hover:bg-gray-100 dark:hover:bg-gray-800">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
-        Alerts
-      </a>
-      <a href="/data-entry/" class="nav-link flex items-center gap-4 px-5 py-4 rounded-xl text-lg font-semibold transition-all hover:bg-gray-100 dark:hover:bg-gray-800">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-        Data Entry
-      </a>
+        <a href="/" class="nav-link flex items-center gap-4 px-5 py-4 rounded-xl text-lg font-semibold transition-all {% if request.path == '/' %}bg-kenya-red text-white shadow-lg{% else %}hover:bg-gray-100 dark:hover:bg-gray-800{% endif %}">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+            Dashboard
+        </a>
+        <a href="/alerts/" class="nav-link flex items-center gap-4 px-5 py-4 rounded-xl text-lg font-semibold transition-all hover:bg-gray-100 dark:hover:bg-gray-800">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+            Alerts
+        </a>
+        <a href="/data-entry/" class="nav-link flex items-center gap-4 px-5 py-4 rounded-xl text-lg font-semibold transition-all hover:bg-gray-100 dark:hover:bg-gray-800">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            Data Entry
+        </a>
+        <!-- NEW: County Navigation (dynamic or static) -->
+        <a href="/counties/" class="nav-link flex items-center gap-4 px-5 py-4 rounded-xl text-lg font-semibold transition-all hover:bg-gray-100 dark:hover:bg-gray-800">  <!-- Replace 'Nairobi' with dynamic if needed -->
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+            Counties
+        </a>
     </nav>
+    
   </aside>
 
-  <!-- MAIN CONTENT -->
-  <main class="pl-64 pt-24 p-8 min-h-screen">
+  <!-- OVERLAY (click to close sidebar on mobile) -->
+  <div id="sidebar-overlay" class="fixed inset-0 bg-black/50 z-30 hidden lg:hidden transition-opacity duration-300"></div>
+
+  <!-- MAIN CONTENT — Full width on mobile -->
+  <main class="pt-20 lg:pt-24 p-4 lg:p-8 lg:pl-64 min-h-screen transition-all duration-300">
     <div class="max-w-7xl mx-auto">
+    
       {% block content %}{% endblock %}
     </div>
   </main>
 
-  <!-- THEME TOGGLE SCRIPT -->
+  <!-- MOBILE THEME TOGGLE (bottom-right) -->
+  <button id="mobile-theme-toggle" class="lg:hidden fixed bottom-6 right-6 p-3 bg-gray-200 dark:bg-gray-700 rounded-full shadow-xl hover:scale-110 transition z-40">
+    <span id="mobile-theme-text" class="text-sm font-medium">Dark</span>
+  </button>
+
+  <!-- SCRIPTS -->
   <script>
-    // Apply saved theme on load
-    const savedTheme = localStorage.getItem('theme');
-    const isDark = savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches);
-    
-    if (isDark) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-
-    // Update button text
-    const updateButton = () => {
-      const text = document.getElementById('theme-text');
-      if (document.documentElement.classList.contains('dark')) {
-        text.textContent = 'Light Mode';
-      } else {
-        text.textContent = 'Dark Mode';
-      }
+    // Theme Toggle (Both buttons)
+    const applyTheme = (isDark) => {
+      document.documentElement.classList.toggle('dark', isDark);
+      localStorage.setItem('theme', isDark ? 'dark' : 'light');
+      document.getElementById('theme-text').textContent = isDark ? 'Light Mode' : 'Dark Mode';
+      document.getElementById('mobile-theme-text').textContent = isDark ? 'Light' : 'Dark';
     };
-    updateButton();
 
-    // Toggle function
+    const saved = localStorage.getItem('theme');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const isDark = saved === 'dark' || (!saved && prefersDark);
+    applyTheme(isDark);
+
     document.getElementById('theme-toggle').addEventListener('click', () => {
-      document.documentElement.classList.toggle('dark');
-      const isNowDark = document.documentElement.classList.contains('dark');
-      localStorage.setItem('theme', isNowDark ? 'dark' : 'light');
-      updateButton();
+      applyTheme(!document.documentElement.classList.contains('dark'));
+    });
+    document.getElementById('mobile-theme-toggle').addEventListener('click', () => {
+      applyTheme(!document.documentElement.classList.contains('dark'));
     });
 
-    // Respect system preference
-    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
-      if (!localStorage.getItem('theme')) {
-        if (e.matches) {
-          document.documentElement.classList.add('dark');
-        } else {
-          document.documentElement.classList.remove('dark');
-        }
-        updateButton();
+    // Mobile Sidebar Toggle
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+    const menuBtn = document.getElementById('mobile-menu-btn');
+
+    const openSidebar = () => {
+      sidebar.classList.remove('-translate-x-full');
+      overlay.classList.remove('hidden');
+      overlay.classList.add('opacity-100');
+      document.body.style.overflow = 'hidden';
+    };
+
+    const closeSidebar = () => {
+      sidebar.classList.add('-translate-x-full');
+      overlay.classList.add('hidden');
+      overlay.classList.remove('opacity-100');
+      document.body.style.overflow = '';
+    };
+
+    menuBtn.addEventListener('click', openSidebar);
+    overlay.addEventListener('click', closeSidebar);
+
+    // Close on escape
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !sidebar.classList.contains('-translate-x-full')) {
+        closeSidebar();
       }
     });
 
+    // AOS Init
     AOS.init({ duration: 800, once: true });
   </script>
 

@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+{% block title %}{{ county.name }} FraudShield{% endblock %}
+
+{% block content %}
+<div class="p-6 max-w-7xl mx-auto">
+  <h1 class="text-4xl font-black text-kenya-red mb-2">{{ county.name }} County</h1>
+  <p class="text-gray-600 mb-8">Real-time fund flow & fraud monitoring</p>
+
+  <!-- Stats -->
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+    <div class="bg-gradient-to-r from-green-600 to-green-700 p-4 rounded-xl text-white">
+      <p class="text-sm">Allocated</p>
+      <p class="text-2xl font-bold">KSh {{ stats.total_allocated|floatformat:0 }}</p>
+    </div>
+    <div class="bg-gradient-to-r from-blue-600 to-blue-700 p-4 rounded-xl text-white">
+      <p class="text-sm">Spent (30d)</p>
+      <p class="text-2xl font-bold">KSh {{ stats.total_spent|floatformat:0 }}</p>
+    </div>
+    <div class="bg-gradient-to-r from-orange-500 to-red-600 p-4 rounded-xl text-white">
+      <p class="text-sm">Active Flags</p>
+      <p class="text-2xl font-bold">{{ stats.active_flags }}</p>
+    </div>
+    <div class="bg-gradient-to-r from-purple-600 to-pink-600 p-4 rounded-xl text-white">
+      <p class="text-sm">Rumors</p>
+      <p class="text-2xl font-bold">{{ stats.rumor_count }}</p>
+    </div>
+  </div>
+
+  <!-- Rumors -->
+  <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-xl mb-8">
+    <h2 class="text-2xl font-bold mb-4">Media Rumors (X/Twitter)</h2>
+    {% for r in rumors %}
+    <div class="border-l-4 border-red-500 pl-4 mb-3">
+      <p class="text-sm text-gray-600">{{ r.timestamp|date:"M d" }}</p>
+      <p>{{ r.text|truncatewords:30 }}</p>
+      <a href="{% url 'rumor-detail' r.rumor_id %}" class="text-kenya-red text-sm">Read →</a>
+    </div>
+    {% empty %}
+    <p class="text-gray-500">No rumors detected.</p>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

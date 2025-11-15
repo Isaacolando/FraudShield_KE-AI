@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% block title %}County List{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto py-10 px-4 sm:px-6 lg:px-8">
+    
+    <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-8">
+        Counties
+    </h1>
+
+    <div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        {% for county in counties %}
+        <a 
+            href="{% url 'county-dashboard' county.name %}" 
+            class="block p-5 bg-white dark:bg-gray-800 rounded-xl shadow hover:shadow-lg transition 
+                   border border-gray-200 dark:border-gray-700 hover:border-kenya-red"
+        >
+            <h2 class="text-lg font-semibold text-kenya-red">
+                {{ county.name }}
+            </h2>
+
+            {% if county.population %}
+            <p class="text-sm text-gray-600 dark:text-gray-400">
+                Population: {{ county.population|intcomma }}
+            </p>
+            {% endif %}
+        </a>
+        {% endfor %}
+    </div>
+
+</div>
+{% endblock %}
