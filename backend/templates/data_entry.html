@@ -1,0 +1,102 @@
+{% extends 'base.html' %}
+{% block title %}Data Entry - FraudShield Kenya{% endblock %}
+
+{% block content %}
+<div data-aos="fade-up">
+  <div class="flex justify-between items-center mb-8">
+    <h1 class="text-5xl font-black bg-gradient-to-r from-kenya-red to-green-700 bg-clip-text text-transparent">
+      Staff Data Entry Portal
+    </h1>
+    <p class="font-bold text-kenya-red">Logged in: {{ user.email }}</p>
+  </div>
+
+  <!-- TABS -->
+  <div class="flex gap-2 mb-8 flex-wrap border-b border-gray-300 dark:border-gray-700">
+    {% for tab in tabs %}
+      <button onclick="openTab('{{ tab.id }}')" 
+              class="tab-button px-6 py-3 rounded-t-xl font-bold transition-all {% if forloop.first %}bg-kenya-red text-white{% else %}bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700{% endif %}"
+              data-tab="{{ tab.id }}">
+        {{ tab.label }}
+      </button>
+    {% endfor %}
+  </div>
+
+  <!-- TAB CONTENT -->
+  <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl p-8 border">
+    {% for tab in tabs %}
+      <div id="{{ tab.id }}-tab" class="tab-content {% if not forloop.first %}hidden{% endif %}">
+        <h2 class="text-2xl font-bold mb-6">{{ tab.label }} Entry</h2>
+        <form id="{{ tab.id }}-form" class="space-y-5 max-w-2xl">
+          {{ tab.fields|safe }}
+          <button type="submit" class="w-full py-3 bg-gradient-to-r from-kenya-red to-orange-600 text-white font-bold rounded-xl hover:scale-105 transition">
+            Save {{ tab.label }}
+          </button>
+        </form>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+{{ tabs_json|json_script:"tabs-data" }}
+{% endblock %}
+{% block scripts %}
+<script>
+  // Use json_script to safely embed JSON (read from the hidden script tag)
+  const tabs = JSON.parse(document.getElementById('tabs-data').textContent);
+
+  // Open tab
+  function openTab(tabId) {
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden'));
+    document.getElementById(tabId + '-tab').classList.remove('hidden');
+    
+    document.querySelectorAll('.tab-button').forEach(b => {
+      b.classList.remove('bg-kenya-red', 'text-white');
+      b.classList.add('bg-gray-100', 'dark:bg-gray-800');
+    });
+    const btn = document.querySelector(`[data-tab="${tabId}"]`);
+    btn.classList.add('bg-kenya-red', 'text-white');
+    btn.classList.remove('bg-gray-100', 'dark:bg-gray-800');
+  }
+
+  // Form submit
+  document.querySelectorAll('form[id$="-form"]').forEach(form => {
+    form.onsubmit = async (e) => {
+      e.preventDefault();
+      const tabId = form.id.replace('-form', '');
+      const endpoint = `/api/${tabId}s/`;
+      const data = Object.fromEntries(new FormData(form));
+
+      // Special handling
+      if (tabId === 'allocation') {
+        const billId = document.querySelector('[name="bill_id"]')?.value;
+        if (billId) data.bill = billId;
+      }
+      if (tabId === 'disbursement') {
+        const allocId = document.querySelector('[name="allocation_id"]')?.value;
+        if (allocId) data.allocation = allocId;
+      }
+      if (tabId === 'transaction') {
+        const src = document.querySelector('[name="source_entity_id"]')?.value;
+        const dst = document.querySelector('[name="dest_entity_id"]')?.value;
+        if (src) data.source_entity = src;
+        if (dst) data.dest_entity = dst;
+      }
+
+      try {
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        if (res.ok) {
+          alert(`${tabId} saved!`);
+          form.reset();
+        } else {
+          alert('Error: ' + await res.text());
+        }
+      } catch (err) {
+        alert('Network error');
+      }
+    };
+  });
+</script>
+{% endblock %}

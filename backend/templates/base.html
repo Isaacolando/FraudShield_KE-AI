@@ -1,0 +1,119 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>{% block title %}FraudShield Kenya{% endblock %}</title>
+  <!-- Tailwind CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            kenya: { red: '#C20000', green: '#006600', black: '#000000' }
+          },
+          fontFamily: { sans: ['Inter', 'sans-serif'] }
+        }
+      }
+    }
+  </script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+  <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+  <script src="https://unpkg.com/cytoscape@3.28.1/dist/cytoscape.min.js"></script>
+  {% block styles %}{% endblock %}
+</head>
+<body class="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-black dark:to-gray-900 text-gray-900 dark:text-white min-h-screen transition-colors duration-300">
+  <!-- HEADER -->
+  <header class="fixed top-0 left-0 right-0 z-50 bg-white/90 dark:bg-black/90 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 shadow-lg">
+    <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 bg-gradient-to-r from-kenya-red to-green-600 rounded-full"></div>
+        <h1 class="text-2xl font-black bg-gradient-to-r from-kenya-red to-green-700 bg-clip-text text-transparent">
+          FraudShield Kenya
+        </h1>
+      </div>
+      <button id="theme-toggle" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 rounded-full font-medium hover:scale-105 transition">
+        <span id="theme-text">Dark Mode</span>
+      </button>
+      
+    </div>
+  </header>
+
+  <!-- SIDEBAR -->
+  <aside class="fixed left-0 top-20 bottom-0 w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 shadow-2xl overflow-y-auto">
+    <nav class="p-6 space-y-3">
+      <a href="/" class="nav-link flex items-center gap-4 px-5 py-4 rounded-xl text-lg font-semibold transition-all {% if request.path == '/' %}bg-kenya-red text-white shadow-lg{% else %}hover:bg-gray-100 dark:hover:bg-gray-800{% endif %}">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+        Dashboard
+      </a>
+      <a href="/alerts/" class="nav-link flex items-center gap-4 px-5 py-4 rounded-xl text-lg font-semibold transition-all hover:bg-gray-100 dark:hover:bg-gray-800">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+        Alerts
+      </a>
+      <a href="/data-entry/" class="nav-link flex items-center gap-4 px-5 py-4 rounded-xl text-lg font-semibold transition-all hover:bg-gray-100 dark:hover:bg-gray-800">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+        Data Entry
+      </a>
+    </nav>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="pl-64 pt-24 p-8 min-h-screen">
+    <div class="max-w-7xl mx-auto">
+      {% block content %}{% endblock %}
+    </div>
+  </main>
+
+  <!-- THEME TOGGLE SCRIPT -->
+  <script>
+    // Apply saved theme on load
+    const savedTheme = localStorage.getItem('theme');
+    const isDark = savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    
+    if (isDark) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+
+    // Update button text
+    const updateButton = () => {
+      const text = document.getElementById('theme-text');
+      if (document.documentElement.classList.contains('dark')) {
+        text.textContent = 'Light Mode';
+      } else {
+        text.textContent = 'Dark Mode';
+      }
+    };
+    updateButton();
+
+    // Toggle function
+    document.getElementById('theme-toggle').addEventListener('click', () => {
+      document.documentElement.classList.toggle('dark');
+      const isNowDark = document.documentElement.classList.contains('dark');
+      localStorage.setItem('theme', isNowDark ? 'dark' : 'light');
+      updateButton();
+    });
+
+    // Respect system preference
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+      if (!localStorage.getItem('theme')) {
+        if (e.matches) {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+        updateButton();
+      }
+    });
+
+    AOS.init({ duration: 800, once: true });
+  </script>
+
+  {% block scripts %}{% endblock %}
+</body>
+</html>

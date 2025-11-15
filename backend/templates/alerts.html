@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+{% block title %}Alerts - FraudShield Kenya{% endblock %}
+
+{% block content %}
+<div data-aos="fade-up">
+  <div class="flex justify-between items-center mb-8">
+    <div>
+      <h1 class="text-5xl font-black bg-gradient-to-r from-kenya-red to-orange-600 bg-clip-text text-transparent">
+        Fraud Alerts
+      </h1>
+      <p class="text-xl text-gray-600 dark:text-gray-400">All active and resolved flags</p>
+    </div>
+    <div class="text-right">
+        {% if user.is_authenticated %}
+      <p class="text-sm text-gray-500">Logged in as:</p>
+
+      <p class="font-bold text-kenya-red">{{ user.get_full_name|default:user.email }}</p>
+        {% endif %}
+    </div>
+  </div>
+
+  <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl p-6 border">
+    <div class="flex gap-4 mb-6">
+      <button onclick="filterAlerts('all')" class="px-6 py-2 rounded-xl font-medium bg-kenya-red text-white">All</button>
+      <button onclick="filterAlerts('active')" class="px-6 py-2 rounded-xl font-medium bg-gray-200 dark:bg-gray-700">Active</button>
+      <button onclick="filterAlerts('resolved')" class="px-6 py-2 rounded-xl font-medium bg-gray-200 dark:bg-gray-700">Resolved</button>
+    </div>
+
+    <div id="alerts-container" class="space-y-4"></div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function loadAlerts(filter = 'all') {
+  const res = await fetch('/api/flags/');
+  const flags = await res.json();
+  const container = document.getElementById('alerts-container');
+  container.innerHTML = '';
+
+  flags
+    .filter(f => filter === 'all' || (filter === 'active' && !f.resolved) || (filter === 'resolved' && f.resolved))
+    .forEach(f => {
+      const color = f.severity >= 4 ? 'border-red-500 bg-red-50 dark:bg-red-900/20' : 'border-orange-500 bg-orange-50 dark:bg-orange-900/20';
+      const div = document.createElement('div');
+      div.className = `p-5 rounded-2xl border-2 ${color} shadow-lg`;
+      div.innerHTML = `
+        <div class="flex justify-between items-start">
+          <div>
+            <p class="font-bold text-lg">Level ${f.severity} - ${f.resolved ? 'Resolved' : 'Active'}</p>
+            <p class="text-sm mt-1">${f.reason}</p>
+            <p class="text-xs text-gray-500 mt-2">Created: ${new Date(f.created_at).toLocaleString()}</p>
+          </div>
+          ${!f.resolved ? `<button onclick="resolveFlag('${f.id}')" class="px-4 py-2 bg-kenya-red text-white rounded-lg text-sm hover:scale-105">Resolve</button>` : ''}
+        </div>
+      `;
+      container.appendChild(div);
+    });
+}
+
+function filterAlerts(type) {
+  document.querySelectorAll('button').forEach(b => b.classList.remove('bg-kenya-red', 'text-white'));
+  event.target.classList.add('bg-kenya-red', 'text-white');
+  loadAlerts(type);
+}
+
+async function resolveFlag(id) {
+  await fetch(`/api/flags/${id}/resolve/`, { method: 'POST' });
+  loadAlerts();
+}
+
+loadAlerts();
+</script>
+{% endblock %}

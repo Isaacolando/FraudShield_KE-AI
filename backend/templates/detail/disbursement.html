@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+{% block title %}{{ disb.disbursement_id }} - Disbursement{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+  <a href="/" class="inline-block mb-6 text-kenya-red hover:underline">Back to Dashboard</a>
+  
+  <h1 class="text-5xl font-black mb-2 text-green-600">{{ disb.disbursement_id }}</h1>
+  <p class="text-xl text-gray-600 dark:text-gray-400 mb-8">
+    Payment released from <strong>{{ disb.allocation.allocation_id }}</strong>
+  </p>
+
+  <!-- KEY INFO CARDS -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+    <div class="bg-gradient-to-br from-green-500 to-emerald-600 text-white p-6 rounded-3xl shadow-xl">
+      <p class="text-sm opacity-90">Amount Disbursed</p>
+      <p class="text-3xl font-black">KSh {{ disb.amount|floatformat:0 }}</p>
+    </div>
+    <div class="bg-white dark:bg-gray-800 p-6 rounded-3xl shadow-xl border">
+      <p class="text-sm text-gray-500">Paid To</p>
+      <p class="text-xl font-bold">{{ disb.to_entity.name }}</p>
+      <p class="text-sm text-gray-500">{{ disb.to_entity.entity_type|capfirst }}</p>
+    </div>
+    <div class="bg-white dark:bg-gray-800 p-6 rounded-3xl shadow-xl border">
+      <p class="text-sm text-gray-500">Date Paid</p>
+      <p class="text-xl font-bold">{{ disb.date|date:"d M Y" }}</p>
+    </div>
+  </div>
+
+  <!-- ALLOCATION LINK -->
+  <div class="bg-gray-50 dark:bg-gray-900 p-6 rounded-3xl mb-8 border">
+    <p class="text-sm text-gray-500 mb-1">From Allocation</p>
+    <a href="{% url 'allocation-detail' disb.allocation.allocation_id %}" 
+       class="text-2xl font-bold text-orange-600 hover:underline">
+      {{ disb.allocation.allocation_id }} → {{ disb.allocation.bill.bill_id }}
+    </a>
+  </div>
+
+  <!-- RELATED TRANSACTIONS -->
+  <h2 class="text-2xl font-bold mb-4">Related Transactions</h2>
+  <div class="space-y-4">
+    {% for tx in disb.transaction_set.all %}
+      <a href="{% url 'transaction-detail' tx.tx_id %}" 
+         class="block p-5 bg-purple-50 dark:bg-purple-900/20 rounded-2xl border hover:shadow-lg transition">
+        <div class="flex justify-between items-center">
+          <div>
+            <p class="font-bold text-lg">{{ tx.tx_id }}</p>
+            <p class="text-sm text-gray-600">KSh {{ tx.amount|floatformat:0 }} via {{ tx.tx_type|capfirst }}</p>
+            <p class="text-xs text-gray-500">{{ tx.timestamp|date:"d M Y, H:i" }}</p>
+          </div>
+          <span class="text-purple-600 font-medium">View Transaction →</span>
+        </div>
+      </a>
+    {% empty %}
+      <div class="text-center py-8 text-gray-500">
+        <p class="text-lg">No bank/MPesa records yet.</p>
+        <p class="text-sm">Waiting for payment confirmation.</p>
+      </div>
+    {% endfor %}
+  </div>
+
+  <!-- EVIDENCE -->
+  <h2 class="text-2xl font-bold mb-4 mt-10">Payment Evidence</h2>
+  {% with evidence=disb.evidencedocument_set.all %}
+    {% if evidence %}
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {% for doc in evidence %}
+          <div class="border rounded-2xl p-4 bg-gray-50 dark:bg-gray-900">
+            <p class="font-bold text-sm">{{ doc.doc_id }}</p>
+            {% if doc.file %}
+              <a href="{{ doc.file.url }}" target="_blank" class="text-kenya-red text-sm block mt-1">Download File</a>
+            {% endif %}
+            <p class="text-xs text-gray-500 mt-1">Uploaded: {{ doc.uploaded_at|date:"d M Y" }}</p>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="text-gray-500">No proof of payment uploaded.</p>
+    {% endif %}
+  {% endwith %}
+</div>
+{% endblock %}

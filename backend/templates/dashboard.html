@@ -1,0 +1,232 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard - FraudShield Kenya{% endblock %}
+
+{% block content %}
+<div data-aos="fade-up">
+  <h1 class="text-5xl font-black mb-2 bg-gradient-to-r from-kenya-red to-green-700 bg-clip-text text-transparent">
+    National Fraud Monitor
+  </h1>
+  <p class="text-xl text-gray-600 dark:text-gray-400 mb-8">
+    Real-time fund flow analysis across 47 counties
+  </p>
+
+  <!-- STATS GRID — CLICKABLE -->
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+    <a href="#" id="bill-card" class="block bg-white dark:bg-gray-800 rounded-3xl shadow-xl p-6 border border-gray-200 dark:border-gray-700 hover:shadow-2xl hover:scale-105 transition">
+      <h3 class="text-lg font-semibold text-gray-600 dark:text-gray-400">Total Bills</h3>
+      <p class="text-2xl font-black text-kenya-red" id="bill-count">0</p>
+    </a>
+    <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-xl p-6 border">
+      <h3 class="text-lg font-semibold text-gray-600 dark:text-gray-400">Total Allocated</h3>
+      <p class="text-2xl font-black text-green-600" id="alloc-total">KSh 0</p>
+    </div>
+    <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-xl p-6 border">
+      <h3 class="text-lg font-semibold text-gray-600 dark:text-gray-400">Transactions Today</h3>
+      <p class="text-4xl font-black text-blue-600" id="tx-today">0</p>
+    </div>
+    <div class="bg-gradient-to-br from-red-500 to-orange-600 text-white rounded-3xl shadow-xl p-6">
+      <h3 class="text-lg font-semibold">Active Fraud Flags</h3>
+      <p class="text-4xl font-black" id="flag-count">0</p>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <!-- GRAPH -->
+    <div class="lg:col-span-2">
+      <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl p-6 border">
+        <h2 class="text-2xl font-bold mb-4">Live Fund Flow Graph</h2>
+
+        <div id="cy" class="h-96 rounded-xl border border-gray-300 dark:border-gray-600"></div>
+      </div>
+    </div>
+
+    <!-- ALERTS + CLICKABLE LISTS -->
+    <div class="space-y-6">
+      <div class="bg-gradient-to-br from-red-500 to-orange-600 text-white rounded-3xl shadow-2xl p-6">
+        <h3 class="text-2xl font-bold mb-4">Critical Alerts</h3>
+        <div id="alerts-list" class="space-y-3"></div>
+      </div>
+
+      <!-- RECENT ENTITIES — CLICKABLE -->
+      <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl p-6 border">
+        <h3 class="text-xl font-bold mb-4">Recent Entities</h3>
+        <div id="entity-list" class="space-y-2 text-sm"></div>
+      </div>
+
+      <!-- RECENT TRANSACTIONS — CLICKABLE -->
+      <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl p-6 border">
+        <h3 class="text-xl font-bold mb-4">Recent Transactions</h3>
+        <div id="tx-list" class="space-y-2 text-sm"></div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+  const api = (path) => fetch(`/api/${path}/`).then(r => r.json());
+  const [bills, allocations, transactions, flags, entities] = await Promise.all([
+    api('bills'), api('allocations'), api('transactions'), api('flags'), api('entities')
+  ]);
+
+  // ===== STATS =====
+  document.getElementById('bill-count').textContent = bills.length;
+  const totalAlloc = allocations.reduce((s, a) => s + parseFloat(a.amount), 0);
+  document.getElementById('alloc-total').textContent = `KSh ${totalAlloc.toLocaleString()}`;
+  const today = new Date().toISOString().split('T')[0];
+  const txToday = transactions.filter(t => t.timestamp.startsWith(today)).length;
+  document.getElementById('tx-today').textContent = txToday;
+  document.getElementById('flag-count').textContent = flags.filter(f => !f.resolved).length;
+
+  // CLICKABLE BILL CARD
+  const billCard = document.getElementById('bill-card');
+  if (bills.length === 1) {
+    billCard.href = `/bill/${bills[0].bill_id}/`;
+  } else if (bills.length > 1) {
+    billCard.href = '#'; // Could link to /bills/ list later
+  }
+
+  // ===== ALERTS =====
+  const alerts = document.getElementById('alerts-list');
+  flags.slice(0, 5).forEach(f => {
+    const div = document.createElement('div');
+    div.className = 'bg-white/20 backdrop-blur rounded-xl p-3 cursor-pointer hover:scale-105 transition';
+    div.onclick = () => {
+      if (f.content_type?.model === 'transaction') {
+        window.location.href = `/transaction/${f.object_id}/`;
+      }
+    };
+    div.innerHTML = `
+      <p class="font-bold">Level ${f.severity}</p>
+      <p class="text-xs">${f.reason}</p>
+      <p class="text-xs opacity-75">${new Date(f.created_at).toLocaleString()}</p>
+    `;
+    alerts.appendChild(div);
+  });
+
+  // ===== RECENT ENTITIES — CLICKABLE =====
+  const entityList = document.getElementById('entity-list');
+  entities.slice(-5).reverse().forEach(e => {
+    const div = document.createElement('div');
+    div.className = 'flex justify-between border-b border-gray-200 dark:border-gray-700 pb-1 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded';
+    div.onclick = () => window.location.href = `/entity/${e.id}/`;
+    div.innerHTML = `
+      <span class="font-medium">${e.name}</span>
+      <span class="text-kenya-red text-xs">${e.entity_type}</span>
+    `;
+    entityList.appendChild(div);
+  });
+
+  // ===== RECENT TRANSACTIONS — CLICKABLE =====
+  const txList = document.getElementById('tx-list');
+  transactions.slice(-5).reverse().forEach(t => {
+    const flag = flags.find(f => f.object_id == t.id && f.content_type.model === 'transaction');
+    const color = flag?.severity >= 4 ? 'text-red-600' : 'text-green-600';
+    const div = document.createElement('div');
+    div.className = 'flex justify-between border-b border-gray-200 dark:border-gray-700 pb-1 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded';
+    div.onclick = () => window.location.href = `/transaction/${t.tx_id}/`;
+    div.innerHTML = `
+      <span>KSh ${parseFloat(t.amount).toLocaleString()}</span>
+      <span class="${color}">${t.dest_entity.name}</span>
+    `;
+    txList.appendChild(div);
+  });
+
+  // ===== GRAPH + HOVER + CLICK =====
+  const elements = [];
+
+  transactions.forEach(tx => {
+    if (!tx.source_entity?.id || !tx.dest_entity?.id) return;
+    const flag = flags.find(f => f.object_id == tx.id);
+    const color = flag?.severity >= 4 ? '#ef4444' : '#10b981';
+    const width = flag?.severity >= 4 ? 6 : 2;
+
+    elements.push({ data: { id: `entity-${tx.source_entity.id}`, label: tx.source_entity.name }, classes: 'entity' });
+    elements.push({ data: { id: `entity-${tx.dest_entity.id}`, label: tx.dest_entity.name }, classes: 'entity' });
+    elements.push({
+      data: { source: `entity-${tx.source_entity.id}`, target: `entity-${tx.dest_entity.id}`, tx_id: tx.tx_id },
+      style: { 'line-color': color, 'width': width },
+      classes: 'transaction-edge'
+    });
+  });
+
+  bills.forEach(bill => {
+    elements.push({
+      data: { id: `bill-${bill.bill_id}`, label: `Bill ${bill.bill_id}` },
+      classes: 'bill-node'
+    });
+  });
+
+  const cy = cytoscape({
+    container: document.getElementById('cy'),
+    elements,
+    style: [
+      { selector: '.entity', style: { 'background-color': '#1f2937', 'label': 'data(label)', 'font-size': 12 } },
+      { selector: '.bill-node', style: { 'background-color': '#dc2626', 'label': 'data(label)', 'shape': 'rectangle', 'width': 90, 'height': 40 } },
+      { selector: 'edge', style: { 'curve-style': 'bezier', 'target-arrow-shape': 'triangle', 'arrow-scale': 1.5 } }
+    ],
+    layout: { name: 'breadthfirst', spacingFactor: 2.5 }
+  });
+
+  // HOVER POPUP
+  let popup = null;
+  cy.on('mouseover', 'node', function(e) {
+    const node = e.target;
+    const data = node.data();
+
+    if (!popup) {
+      popup = document.createElement('div');
+      popup.className = 'fixed bg-black text-white p-3 rounded-lg shadow-2xl text-sm z-50 pointer-events-none';
+      document.body.appendChild(popup);
+    }
+
+    let html = '';
+    if (data.id.startsWith('bill-')) {
+      const bill = bills.find(b => `bill-${b.bill_id}` === data.id);
+      if (bill) html = `<strong>${bill.bill_id}</strong><br>KSh ${parseFloat(bill.amount).toLocaleString()}<br>${bill.purpose || 'No purpose'}`;
+    } else if (data.id.startsWith('entity-')) {
+      const entity = entities.find(e => `entity-${e.id}` === data.id);
+      if (entity) html = `<strong>${entity.name}</strong><br>${entity.entity_type}<br>${entity.national_id ? 'ID: ' + entity.national_id : ''}`;
+    }
+
+    if (html) {
+      popup.innerHTML = html;
+      popup.style.left = (e.originalEvent.pageX + 15) + 'px';
+      popup.style.top = (e.originalEvent.pageY + 15) + 'px';
+      popup.style.display = 'block';
+    }
+  });
+
+  cy.on('mouseout', 'node', () => {
+    if (popup) popup.style.display = 'none';
+  });
+
+  // CLICK → DETAIL PAGE
+  cy.on('tap', 'node', function(e) {
+    const node = e.target;
+    const data = node.data();
+    let url = '';
+
+    if (data.id.startsWith('bill-')) {
+      const billId = data.id.replace('bill-', '');
+      if (bills.some(b => b.bill_id === billId)) url = `/bill/${billId}/`;
+    } else if (data.id.startsWith('entity-')) {
+      const entityId = data.id.replace('entity-', '');
+      if (entities.some(e => e.id == entityId)) url = `/entity/${entityId}/`;
+    }
+
+    if (url) window.location.href = url;
+  });
+
+  cy.on('tap', 'edge', function(e) {
+    const edge = e.target;
+    const tx_id = edge.data('tx_id');
+    if (tx_id && transactions.some(t => t.tx_id === tx_id)) {
+      window.location.href = `/transaction/${tx_id}/`;
+    }
+  });
+});
+</script>
+{% endblock %}

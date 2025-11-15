@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% block title %}{{ entity.name }} - Entity{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+  <a href="/" class="inline-block mb-6 text-kenya-red hover:underline">Back</a>
+  <h1 class="text-5xl font-black mb-2">{{ entity.name }}</h1>
+  <p class="text-xl text-gray-600 mb-8">{{ entity.entity_type|capfirst }}</p>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+    <div class="bg-white dark:bg-gray-800 p-6 rounded-3xl shadow-xl">
+      <p class="text-sm text-gray-500">National ID</p>
+      <p class="font-mono">{{ entity.national_id|default:"—" }}</p>
+    </div>
+    <div class="bg-white dark:bg-gray-800 p-6 rounded-3xl shadow-xl">
+      <p class="text-sm text-gray-500">Phone</p>
+      <p class="font-mono">{{ entity.phone|default:"—" }}</p>
+    </div>
+  </div>
+
+  <h2 class="text-2xl font-bold mb-4">Incoming Transactions</h2>
+  {% for tx in incoming %}
+    <a href="{% url 'transaction-detail' tx.tx_id %}" class="block p-4 bg-green-50 dark:bg-green-900/20 rounded-xl mb-2">
+      <p class="font-bold">KSh {{ tx.amount|floatformat:0 }} from {{ tx.source_entity.name }}</p>
+    </a>
+  {% empty %}
+    <p class="text-gray-500">No incoming.</p>
+  {% endfor %}
+
+  <h2 class="text-2xl font-bold mb-4 mt-8">Outgoing Transactions</h2>
+  {% for tx in outgoing %}
+    <a href="{% url 'transaction-detail' tx.tx_id %}" class="block p-4 bg-red-50 dark:bg-red-900/20 rounded-xl mb-2">
+      <p class="font-bold">KSh {{ tx.amount|floatformat:0 }} to {{ tx.dest_entity.name }}</p>
+    </a>
+  {% empty %}
+    <p class="text-gray-500">No outgoing.</p>
+  {% endfor %}
+</div>
+{% endblock %}

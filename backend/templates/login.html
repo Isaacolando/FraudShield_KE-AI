@@ -1,0 +1,42 @@
+{% load static %}
+<!DOCTYPE html>
+<html class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Staff Login - FraudShield Kenya</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = { darkMode: 'class', theme: { extend: { colors: { kenya: { red: '#C20000' } } } } }
+  </script>
+</head>
+<body class="h-full bg-gradient-to-br from-kenya-red to-black flex items-center justify-center p-4">
+  <div class="w-full max-w-md">
+    <div class="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl p-8">
+      <div class="flex justify-center mb-6">
+        <div class="w-16 h-16 bg-gradient-to-r from-kenya-red to-green-600 rounded-full"></div>
+      </div>
+      <h1 class="text-3xl font-black text-center mb-2">FraudShield Kenya</h1>
+      <p class="text-center text-gray-600 dark:text-gray-400 mb-8">Staff Portal</p>
+
+      {% if messages %}
+        {% for msg in messages %}
+          <div class="bg-red-100 text-red-700 p-3 rounded-lg mb-4 text-sm">{{ msg }}</div>
+        {% endfor %}
+      {% endif %}
+
+      <form method="post" class="space-y-5">
+        {% csrf_token %}
+        <input type="email" name="username" placeholder="Email" required
+               class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 dark:bg-gray-800 focus:ring-2 focus:ring-kenya-red focus:outline-none">
+        <input type="password" name="password" placeholder="Password" required
+               class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 dark:bg-gray-800 focus:ring-2 focus:ring-kenya-red focus:outline-none">
+        <button type="submit"
+                class="w-full py-3 bg-gradient-to-r from-kenya-red to-orange-600 text-white font-bold rounded-xl hover:scale-105 transition">
+          Login as Staff
+        </button>
+      </form>
+    </div>
+  </div>
+</body>
+</html>

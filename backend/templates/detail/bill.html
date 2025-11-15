@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% block title %}{{ bill.bill_id }} - FraudShield{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+  <a href="/" class="inline-block mb-6 text-kenya-red hover:underline">Back to Dashboard</a>
+  <h1 class="text-5xl font-black mb-2">Bill: {{ bill.bill_id }}</h1>
+  <p class="text-2xl text-gray-600 mb-8">{{ bill.purpose|default:"No purpose specified" }}</p>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+    <div class="bg-white dark:bg-gray-800 rounded-3xl p-6 shadow-xl">
+      <p class="text-sm text-gray-500">Amount</p>
+      <p class="text-3xl font-bold text-kenya-red">KSh {{ bill.amount|floatformat:0 }}</p>
+    </div>
+    <div class="bg-white dark:bg-gray-800 rounded-3xl p-6 shadow-xl">
+      <p class="text-sm text-gray-500">Year</p>
+      <p class="text-3xl font-bold">{{ bill.year }}</p>
+    </div>
+  </div>
+
+  <h2 class="text-2xl font-bold mb-4">Allocations from this Bill</h2>
+  <div class="space-y-4">
+    {% for alloc in allocations %}
+      <a href="{% url 'allocation-detail' alloc.allocation_id %}" 
+         class="block p-5 bg-gray-50 dark:bg-gray-800 rounded-2xl border hover:shadow-lg transition">
+        <div class="flex justify-between">
+          <div>
+            <p class="font-bold">{{ alloc.to_entity.name }}</p>
+            <p class="text-sm text-gray-600">KSh {{ alloc.amount|floatformat:0 }} • {{ alloc.date_allocated }}</p>
+          </div>
+          <span class="text-kenya-red">View →</span>
+        </div>
+      </a>
+    {% empty %}
+      <p class="text-gray-500">No allocations yet.</p>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

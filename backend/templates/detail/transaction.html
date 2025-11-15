@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+{% block title %}{{ tx.tx_id }} - Transaction{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+  <a href="/" class="inline-block mb-6 text-kenya-red hover:underline">Back</a>
+  <h1 class="text-5xl font-black mb-2">{{ tx.tx_id }}</h1>
+
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+    <div class="bg-white dark:bg-gray-800 p-6 rounded-3xl shadow-xl">
+      <p class="text-sm text-gray-500">From</p>
+      <p class="font-bold">{{ tx.source_entity.name }}</p>
+    </div>
+    <div class="bg-white dark:bg-gray-800 p-6 rounded-3xl shadow-xl text-center">
+      <p class="text-4xl">Arrow Right</p>
+      <p class="text-sm text-gray-500">{{ tx.tx_type|capfirst }}</p>
+    </div>
+    <div class="bg-white dark:bg-gray-800 p-6 rounded-3xl shadow-xl">
+      <p class="text-sm text-gray-500">To</p>
+      <p class="font-bold">{{ tx.dest_entity.name }}</p>
+    </div>
+  </div>
+
+  <div class="bg-white dark:bg-gray-800 p-6 rounded-3xl shadow-xl mb-8">
+    {% if tx %}
+        <h1>{{ tx.tx_id }}</h1>
+        <p class="text-sm text-gray-500">Amount</p>
+        <p class="text-4xl font-bold text-kenya-red">KSh {{ tx.amount|floatformat:0 }}</p>
+        <p class="text-sm text-gray-500 mt-2">Timestamp: {{ tx.timestamp|date:"d M Y, H:i" }}</p>
+    {% else %}
+        <p>Transaction not found.</p>
+    {% endif %}
+  </div>
+
+  <h2 class="text-2xl font-bold mb-4">Evidence</h2>
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    {% for doc in evidence %}
+      <div class="border rounded-2xl p-4 bg-gray-50 dark:bg-gray-900">
+        <p class="font-bold">{{ doc.doc_id }}</p>
+        {% if doc.file %}
+          <a href="{{ doc.file.url }}" target="_blank" class="text-kenya-red text-sm">View File</a>
+        {% endif %}
+        <p class="text-xs text-gray-500 mt-1">Uploaded: {{ doc.uploaded_at|date:"d M Y" }}</p>
+      </div>
+    {% empty %}
+      <p class="text-gray-500">No evidence attached.</p>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

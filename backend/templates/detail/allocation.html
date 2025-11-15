@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+{% block title %}{{ alloc.allocation_id }} - Allocation{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+  <a href="/" class="inline-block mb-6 text-kenya-red hover:underline">Back to Dashboard</a>
+  
+  <h1 class="text-5xl font-black mb-2 text-orange-600">{{ alloc.allocation_id }}</h1>
+  <p class="text-xl text-gray-600 dark:text-gray-400 mb-8">
+    Allocation from <strong>{{ alloc.bill.bill_id }}</strong>
+  </p>
+
+  <!-- KEY INFO CARDS -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+    <div class="bg-gradient-to-br from-orange-500 to-red-600 text-white p-6 rounded-3xl shadow-xl">
+      <p class="text-sm opacity-90">Amount Allocated</p>
+      <p class="text-3xl font-black">KSh {{ alloc.amount|floatformat:0 }}</p>
+    </div>
+    <div class="bg-white dark:bg-gray-800 p-6 rounded-3xl shadow-xl border">
+      <p class="text-sm text-gray-500">Recipient</p>
+      <p class="text-xl font-bold">{{ alloc.to_entity.name }}</p>
+      <p class="text-sm text-gray-500">{{ alloc.to_entity.entity_type|capfirst }}</p>
+    </div>
+    <div class="bg-white dark:bg-gray-800 p-6 rounded-3xl shadow-xl border">
+      <p class="text-sm text-gray-500">Date Allocated</p>
+      <p class="text-xl font-bold">{{ alloc.date_allocated|date:"d M Y" }}</p>
+    </div>
+  </div>
+
+  <!-- BILL LINK -->
+  <div class="bg-gray-50 dark:bg-gray-900 p-6 rounded-3xl mb-8 border">
+    <p class="text-sm text-gray-500 mb-1">Source Bill</p>
+    <a href="{% url 'bill-detail' alloc.bill.bill_id %}" 
+       class="text-2xl font-bold text-kenya-red hover:underline">
+      {{ alloc.bill.bill_id }} → {{ alloc.bill.purpose|default:"View Bill" }}
+    </a>
+  </div>
+
+  <!-- DISBURSEMENTS FROM THIS ALLOCATION -->
+  <h2 class="text-2xl font-bold mb-4">Disbursements</h2>
+  <div class="space-y-4">
+    {% for disb in alloc.disbursement_set.all %}
+      <a href="{% url 'disbursement-detail' disb.disbursement_id %}" 
+         class="block p-5 bg-blue-50 dark:bg-blue-900/20 rounded-2xl border hover:shadow-lg transition">
+        <div class="flex justify-between items-center">
+          <div>
+            <p class="font-bold text-lg">{{ disb.disbursement_id }}</p>
+            <p class="text-sm text-gray-600">KSh {{ disb.amount|floatformat:0 }} to {{ disb.to_entity.name }}</p>
+            <p class="text-xs text-gray-500">{{ disb.date|date:"d M Y" }}</p>
+          </div>
+          <span class="text-blue-600 font-medium">View Details →</span>
+        </div>
+      </a>
+    {% empty %}
+      <div class="text-center py-8 text-gray-500">
+        <p class="text-lg">No disbursements yet.</p>
+        <p class="text-sm">Funds allocated but not released.</p>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}
